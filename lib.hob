@@ -1,0 +1,65 @@
+import std;
+import result;
+import mem;
+import optional;
+
+use optional.Optional;
+use result.NoneResult;
+
+type &ReadFn<T> = fun (*T) -> NoneResult;
+type &WriteFn<T> = fun (*T) -> NoneResult;
+type &FreeFn<T> = fun (*T);
+
+public type Writer = struct {
+    self: *void,
+    writeFn: WriteFn.<void>,
+    freeFn: Optional.<(FreeFn.<void>)>,
+};
+
+public fun newWriter<T>(self: T, write: WriteFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Writer {
+    return {
+        self: mem.allocateWith.<T>(self),
+        writeFn: write as ?,
+        freeFn: free.map.<(FreeFn.<void>)>(fun (ptr) {
+            return ptr as ?;
+        }),
+    };
+}
+
+public fun Writer.write(self) -> NoneResult {
+    return self.writeFn(self.self);
+}
+
+public fun Writer.free(self) {
+    if !self.freeFn.isEmpty {
+        self.freeFn.value(self.self);
+    }
+    mem.free(self.self);
+}
+
+public type Reader = struct {
+    self: *void,
+    readFn: ReadFn.<void>,
+    freeFn: Optional.<(FreeFn.<void>)>,
+};
+
+public fun newReader<T>(self: T, read: ReadFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Reader {
+    return {
+        self: mem.allocateWith.<T>(self),
+        readFn: read as ?,
+        freeFn: free.map.<(FreeFn.<void>)>(fun (ptr) {
+            return ptr as ?;
+        }),
+    };
+}
+
+public fun Reader.read(self) -> NoneResult {
+    return self.readFn(self.self);
+}
+
+public fun Reader.free(self) {
+    if !self.freeFn.isEmpty {
+        self.freeFn.value(self.self);
+    }
+    mem.free(self.self);
+}
