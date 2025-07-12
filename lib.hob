@@ -13,18 +13,26 @@ type &FreeFn<T> = fun (*T);
 
 public type Writer = struct {
     self: *void,
+    allocated: bool,
     writeFn: WriteFn.<void>,
     freeFn: Optional.<(FreeFn.<void>)>,
 };
 
-public fun newWriter<T>(self: T, write: WriteFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Writer {
+public fun newWriterRef<T>(self: *T, write: WriteFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Writer {
     return {
-        self: mem.allocateWith.<T>(self),
+        self: self,
         writeFn: write as ?,
+        allocated: false,
         freeFn: free.map.<(FreeFn.<void>)>(fun (ptr) {
             return ptr as ?;
         }),
     };
+}
+
+public fun newWriter<T>(self: T, write: WriteFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Writer {
+    var result = newWriterRef.<T>(mem.allocateWith.<T>(self), write, free);
+    result.allocated = true;
+    return result;
 }
 
 public fun Writer.write(self, slice: Slice.<u8>) -> NoneResult {
@@ -35,23 +43,33 @@ public fun Writer.free(self) {
     if !self.freeFn.isEmpty {
         self.freeFn.value(self.self);
     }
-    mem.free(self.self);
+    if self.allocated {
+        mem.free(self.self);
+    }
 }
 
 public type Reader = struct {
     self: *void,
+    allocated: bool,
     readFn: ReadFn.<void>,
     freeFn: Optional.<(FreeFn.<void>)>,
 };
 
-public fun newReader<T>(self: T, read: ReadFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Reader {
+public fun newReaderRef<T>(self: *T, read: ReadFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Reader {
     return {
-        self: mem.allocateWith.<T>(self),
+        self: self,
+        allocated: false,
         readFn: read as ?,
         freeFn: free.map.<(FreeFn.<void>)>(fun (ptr) {
             return ptr as ?;
         }),
     };
+}
+
+public fun newReader<T>(self: T, read: ReadFn.<T>, free: Optional.<(FreeFn.<T>)>) -> Reader {
+    var result = newReaderRef.<T>(mem.allocateWith.<T>(self), read, free);
+    result.allocated = true;
+    return result;
 }
 
 public fun Reader.read(self, slice: Slice.<u8>) -> Result.<(Slice.<u8>)> {
@@ -62,5 +80,7 @@ public fun Reader.free(self) {
     if !self.freeFn.isEmpty {
         self.freeFn.value(self.self);
     }
-    mem.free(self.self);
+    if self.allocated {
+        mem.free(self.self);
+    }
 }
