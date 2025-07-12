@@ -3,11 +3,12 @@ import result;
 import mem;
 import optional;
 
+use std.slice.Slice;
 use optional.Optional;
-use result.NoneResult;
+use result.{ Result, NoneResult };
 
-type &ReadFn<T> = fun (*T) -> NoneResult;
-type &WriteFn<T> = fun (*T) -> NoneResult;
+type &ReadFn<T> = fun (*T, Slice.<u8>) -> Result.<(Slice.<u8>)>;
+type &WriteFn<T> = fun (*T, Slice.<u8>) -> NoneResult;
 type &FreeFn<T> = fun (*T);
 
 public type Writer = struct {
@@ -26,8 +27,8 @@ public fun newWriter<T>(self: T, write: WriteFn.<T>, free: Optional.<(FreeFn.<T>
     };
 }
 
-public fun Writer.write(self) -> NoneResult {
-    return self.writeFn(self.self);
+public fun Writer.write(self, slice: Slice.<u8>) -> NoneResult {
+    return self.writeFn(self.self, slice);
 }
 
 public fun Writer.free(self) {
@@ -53,8 +54,8 @@ public fun newReader<T>(self: T, read: ReadFn.<T>, free: Optional.<(FreeFn.<T>)>
     };
 }
 
-public fun Reader.read(self) -> NoneResult {
-    return self.readFn(self.self);
+public fun Reader.read(self, slice: Slice.<u8>) -> Result.<(Slice.<u8>)> {
+    return self.readFn(self.self, slice);
 }
 
 public fun Reader.free(self) {
