@@ -7,9 +7,9 @@ use std.slice.Slice;
 use optional.Optional;
 use result.{ Result, NoneResult };
 
-type &ReadFn<T> = fun (*T, Slice.<u8>) -> Result.<(Slice.<u8>)>;
-type &WriteFn<T> = fun (*T, Slice.<u8>) -> NoneResult;
-type &FreeFn<T> = fun (*T);
+public type &ReadFn<T> = fun (*T, Slice.<u8>) -> Result.<(Slice.<u8>)>;
+public type &WriteFn<T> = fun (*T, Slice.<u8>) -> NoneResult;
+public type &FreeFn<T> = fun (*T);
 
 public type Writer = struct {
     self: *void,
